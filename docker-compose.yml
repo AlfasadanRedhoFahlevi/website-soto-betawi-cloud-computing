@@ -1,0 +1,50 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    environment:
+      APP_NAME: Laravel
+      APP_ENV: production
+      APP_KEY: "${APP_KEY:?Set APP_KEY in Helipod environment}"
+      APP_DEBUG: "false"
+      APP_URL: "${APP_URL:-http://localhost}"
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: soto_betawi_berkah
+      DB_USERNAME: laravel
+      DB_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in Helipod environment}"
+    volumes:
+      - app_storage:/var/www/html/storage/app/public
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: soto_betawi_berkah
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in Helipod environment}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in Helipod environment}"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  app_storage:
+  mysql_data:
